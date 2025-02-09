@@ -57,7 +57,7 @@ def get_variables():
         var_json = _get_json_response(url, params)
         variables.append(_parse_variable(var_json))
     df = pd.DataFrame(variables)
-    df.to_csv("data/variables.csv", index=False)
+    df.to_csv("data/variables.csv", index=False, encoding="utf-8")
     return df
 
 
@@ -100,5 +100,5 @@ if __name__ == "__main__":
         values="value",
     )
     df_wide = df_wide.reset_index()
-    df_wide.to_csv("data/all_data.csv", index=False)
+    df_wide.to_csv("data/all_data.csv", index=False, encoding="utf-8")
     print(df_wide)
