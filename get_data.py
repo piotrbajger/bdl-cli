@@ -90,7 +90,7 @@ def get_unit_ids():
 def get_variable_ids():
     with open("zmienne.txt") as f:
         var_ids = f.readlines()
-    var_ids = [v.strip() for v in var_ids if v]
+    var_ids = [v.strip() for v in var_ids if v.strip()]
     print(f"Ściągam dane dla {len(var_ids)} zmiennych.")
     return var_ids
 
@@ -102,18 +102,24 @@ if __name__ == "__main__":
     all_data = []
     for unit_id in unit_ids:
         unit_data = get_unit_data(
-            unit_id="012415075011",
+            unit_id=unit_id,
             variable_ids=variable_ids,
         )
 
     output_path = "data/all_data.csv"
     df = unit_data.merge(variables, how="left", on="variable_id")
+    df = df[df["year"] == "2023"]
+    df["variable_name_and_unit"] = (
+        "[" + df["variable_id"].astype(str) + "] "
+        + df["variable_name"]
+        + " [" + df["variable_unit"] + "]"
+    )
     df_wide = df.pivot(
-        index=["unit_id", "variable_id", "unit_name", "variable_name", "variable_unit"],
-        columns="year",
+        index=["unit_name", "unit_id"],
+        columns="variable_name_and_unit",
         values="value",
     )
     df_wide = df_wide.reset_index()
-    df_wide.to_csv(output_path, index=False, encoding="utf-8")
+    df_wide.to_csv(output_path, index=False, encoding="utf-8-sig")
 
     print(f"Zapisuję {len(df_wide)} wierszy w {output_path}.")
