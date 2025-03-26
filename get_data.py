@@ -24,6 +24,7 @@ def get_unit_data(unit_id, variable_ids):
     params = {
         "format": "json",
         "var-id": variable_ids,
+        "year": "2023",
     }
     resp = _get_json_response(url, params)
     return json_to_dataframe(resp)
@@ -41,6 +42,7 @@ def get_variables():
             raise RuntimeError(f"No name levels in {var_dict}")
         parsed_dict = {
             "variable_id": var_dict["id"],
+            "variable_subject_id": var_dict["subjectId"],
             "variable_name": " - ".join(name_parts),
             "variable_unit": var_dict["measureUnitName"],
         }
@@ -82,7 +84,7 @@ def json_to_dataframe(json_data):
 def get_unit_ids():
     with open("jednostki.txt") as f:
         unit_ids = f.readlines()
-    unit_ids = [u.strip() for u in unit_ids if u]
+    unit_ids = [u.strip() for u in unit_ids if u.strip()]
     print(f"Ściągam dane dla {len(unit_ids)} jednostek terytorialnych.")
     return unit_ids
 
@@ -100,17 +102,23 @@ if __name__ == "__main__":
     variables = get_variables()
     variable_ids = variables["variable_id"].to_list()
     all_data = []
-    for unit_id in unit_ids:
+    for i, unit_id in enumerate(unit_ids, start=1):
+        print(
+            f"Ściągam dane dla {unit_id:>30s} ({i}/{len(unit_ids)})... ",
+            end="",
+        )
         unit_data = get_unit_data(
             unit_id=unit_id,
             variable_ids=variable_ids,
         )
+        all_data.append(unit_data)
+        print(f"{len(unit_data)} wierszy")
 
-    output_path = "data/all_data.csv"
-    df = unit_data.merge(variables, how="left", on="variable_id")
-    df = df[df["year"] == "2023"]
+    df = pd.concat(all_data)
+    df = df.merge(variables, how="left", on="variable_id")
     df["variable_name_and_unit"] = (
-        "[" + df["variable_id"].astype(str) + "] "
+        "[" + df["variable_subject_id"] + "/"
+        + df["variable_id"].astype(str) + "] "
         + df["variable_name"]
         + " [" + df["variable_unit"] + "]"
     )
@@ -120,6 +128,7 @@ if __name__ == "__main__":
         values="value",
     )
     df_wide = df_wide.reset_index()
-    df_wide.to_csv(output_path, index=False, encoding="utf-8-sig")
 
+    output_path = "data/all_data.csv"
+    df_wide.to_csv(output_path, index=False, encoding="utf-8-sig")
     print(f"Zapisuję {len(df_wide)} wierszy w {output_path}.")
